@@ -45,6 +45,37 @@ func (user *User) SaveUser(regUser *RegUser) error {
 }
 
 /*
+ * used for login
+ */
+type LoginUser struct {
+	User
+	PasswordStr string
+}
+
+func (loginUser *LoginUser) Validate(v *revel.Validation) {
+	v.Check(loginUser.UserName,
+		revel.Required{},
+		revel.MinSize{6},
+		revel.MaxSize{16},
+	)
+
+	v.Check(loginUser.PasswordStr,
+		revel.Required{},
+		revel.MinSize{8},
+		revel.MaxSize{16},
+	)
+
+	//0: generate passing str
+	//1: get pwd bytes from database
+	//2: compare them
+	//test here
+	pwd := "testtest"
+	//rPwd := "testtest"
+	rPwd := "testtest"
+	v.Required(pwd == rPwd).Message("user name or password is wrong!!!")
+}
+
+/*
  * used for register or update user
  */
 type RegUser struct {

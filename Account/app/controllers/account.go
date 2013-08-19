@@ -18,12 +18,34 @@ func (c Account) GetLogin() revel.Result {
 	return c.Render()
 }
 
-func (c Account) PostLogin() revel.Result {
-	return c.Render()
+// test name : manson
+// test pwd  : $2a$10$mmVKZOBn6Cbe8TWGF6CBJuLJJtOi8DPbq0wLlXet2VvPvAC6yoS26
+func (c Account) PostLogin(loginUser *models.LoginUser) revel.Result {
+	//workflow is the same as PostRegister
+	//step 0: check user is exist or not
+	loginUser.Validate(c.Validation)
+
+	//step 1: validation
+	if c.Validation.HasErrors() {
+		c.Validation.Keep()
+		c.FlashParams()
+		return c.Redirect(Account.GetLogin)
+	}
+
+	//step 3: save cookie, flash or session
+	c.Session["user"] = loginUser.UserName
+	c.Flash.Success("Welcome, login " + loginUser.UserName)
+
+	//step 4: rediret
+	return c.Redirect(Account.Index)
 }
 
 func (c Account) Logout() revel.Result {
-	return c.Render()
+	for k := range c.Session {
+		delete(c.Session, k)
+	}
+	c.Flash.Success("Welcome, logout ")
+	return c.Redirect(App.Index)
 }
 
 func (c Account) GetRegister() revel.Result {
@@ -50,7 +72,7 @@ func (c Account) PostRegister(regUser *models.RegUser) revel.Result {
 
 	//step 3: save cookie, flash or session
 	c.Session["user"] = regUser.UserName
-	c.Flash.Success("Welcome, " + regUser.UserName)
+	c.Flash.Success("Welcome, register " + regUser.UserName)
 
 	//step 4: rediret
 	return c.Redirect(Account.Index)
