@@ -4,11 +4,28 @@ import (
 	"fmt"
 	"code.google.com/p/go.crypto/bcrypt"
 	"github.com/robfig/revel"
+	"regexp"
 )
 
 const (
+	DEBUG = true
 	DEBUG_PWD = true
 )
+
+var USERNAME_REX, PWD_REX, NICKNAME_REX *regexp.Regexp
+
+func init() {
+	USERNAME_REX = regexp.MustCompile(`^[a-z0-9_]{6,16}$`)
+	PWD_REX = regexp.MustCompile(`^[\x01-\xfe]{8,20}$`)
+
+	//NICKNAME_REX = regexp.MustCompile(`^[a-zA-Z\xa0-\xff_][0-9a-zA-Z\xa0-\xff_]{3,15}$`)
+	NICKNAME_REX = USERNAME_REX
+}
+
+func generatePwdByte(pwd string) []byte {
+	pwdByte, _ := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)
+	return pwdByte
+}
 
 /*
  * real struct which was persisted in database
@@ -30,16 +47,18 @@ func (user *User) String() string {
 	}
 }
 
-/*
-* TODO: This should be a method or a function???
- */
-func (user *User) generatePwdByte(pwdStr string) error {
-	user.HashPassword, _ = bcrypt.GenerateFromPassword([]byte(pwdStr), bcrypt.DefaultCost)
-	return nil
-}
+func (user *User) SaveUser() error {
+	if DEBUG {
+		fmt.Println("SaveUser in ------> User")
+	}
 
-func (user *User) SaveUser(regUser *RegUser) error {
-	user.generatePwdByte(regUser.PasswordStr)
+	dal, err := NewDal()
+	if err != nil {
+
+	}
+	defer dal.Close()
+
+	err = dal.SaveUser(user)
 	fmt.Println("Save User success: ", user)
 	return nil
 }
@@ -55,15 +74,13 @@ type LoginUser struct {
 func (loginUser *LoginUser) Validate(v *revel.Validation) {
 	v.Check(loginUser.UserName,
 		revel.Required{},
-		revel.MinSize{6},
-		revel.MaxSize{16},
-	)
+		revel.Match{USERNAME_REX},
+	).Message("UserName or password is wrong")
 
 	v.Check(loginUser.PasswordStr,
 		revel.Required{},
-		revel.MinSize{8},
-		revel.MaxSize{16},
-	)
+		revel.Match{PWD_REX},
+	).Message("UserName or password is wrong")
 
 	//0: generate passing str
 	//1: get pwd bytes from database
@@ -76,12 +93,20 @@ func (loginUser *LoginUser) Validate(v *revel.Validation) {
 }
 
 /*
- * used for register or update user
+ * used for register
  */
 type RegUser struct {
 	User
 	PasswordStr string
 	ConfirmPwdStr string
+}
+
+func (regUser *RegUser) SaveUser() {
+	if DEBUG {
+		fmt.Println("SaveUser in ------> RegUser")
+	}
+	regUser.HashPassword = generatePwdByte(regUser.PasswordStr)
+	regUser.User.SaveUser()
 }
 
 func (regUser *RegUser) Validate(v *revel.Validation) {
@@ -95,14 +120,12 @@ func (regUser *RegUser) Validate(v *revel.Validation) {
 	//should be assigned to Error.
 	v.Check(regUser.UserName,
 		revel.Required{},
-		revel.MinSize{6},
-		revel.MaxSize{16},
+		revel.Match{USERNAME_REX},
 	)
 
 	v.Check(regUser.NickName,
 		revel.Required{},
-		revel.MinSize{6},
-		revel.MaxSize{16},
+		revel.Match{NICKNAME_REX},
 	)
 
 	//validation provide an convenient method for checking Email.
@@ -111,14 +134,17 @@ func (regUser *RegUser) Validate(v *revel.Validation) {
 
 	v.Check(regUser.PasswordStr,
 		revel.Required{},
-		revel.MinSize{8},
-		revel.MaxSize{16},
+		revel.Match{PWD_REX},
 	)
 	v.Check(regUser.ConfirmPwdStr,
 		revel.Required{},
-		revel.MinSize{8},
-		revel.MaxSize{16},
+		revel.Match{PWD_REX},
 	)
 	//pwd and comfirm_pwd should be equal
 	v.Required(regUser.PasswordStr == regUser.ConfirmPwdStr).Message("The passwords do not match.")
 }
+
+/*
+ *used for updating user
+ */
+type UpdateUser RegUser

@@ -18,8 +18,6 @@ func (c Account) GetLogin() revel.Result {
 	return c.Render()
 }
 
-// test name : manson
-// test pwd  : $2a$10$mmVKZOBn6Cbe8TWGF6CBJuLJJtOi8DPbq0wLlXet2VvPvAC6yoS26
 func (c Account) PostLogin(loginUser *models.LoginUser) revel.Result {
 	//workflow is the same as PostRegister
 	//step 0: check user is exist or not
@@ -68,7 +66,7 @@ func (c Account) PostRegister(regUser *models.RegUser) revel.Result {
 	}
 
 	//step 2: save user
-	regUser.SaveUser(regUser)
+	regUser.SaveUser()
 
 	//step 3: save cookie, flash or session
 	c.Session["user"] = regUser.UserName
@@ -77,4 +75,3 @@ func (c Account) PostRegister(regUser *models.RegUser) revel.Result {
 	//step 4: rediret
 	return c.Redirect(Account.Index)
 }
-
