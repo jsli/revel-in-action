@@ -66,7 +66,12 @@ func (c Account) PostRegister(regUser *models.RegUser) revel.Result {
 	}
 
 	//step 2: save user
-	regUser.SaveUser()
+	err := regUser.SaveUser()
+	if err != nil {
+		c.Validation.Keep()
+		c.FlashParams()
+		return c.Redirect(Account.GetRegister)
+	}
 
 	//step 3: save cookie, flash or session
 	c.Session["user"] = regUser.UserName

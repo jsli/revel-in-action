@@ -11,17 +11,17 @@ import (
 )
 
 const (
-	DbName = "account"
-	UserCollection = "user"
+	DbSection = "db"
+	Ip = "ip"
 )
 
-type Dal struct {
+type DbManager struct {
 	session *mgo.Session
 }
 
-func NewDal() (*Dal, error) {
-	revel.Config.SetSection("db")
-	ip, found := revel.Config.String("ip")
+func NewDbManager() (*DbManager, error) {
+	revel.Config.SetSection(DbSection)
+	ip, found := revel.Config.String(Ip)
 	if !found {
 		revel.ERROR.Fatal("Cannot load database ip from app.conf")
 	}
@@ -31,9 +31,9 @@ func NewDal() (*Dal, error) {
 		return nil, err
 	}
 
-	return &Dal{session}, nil
+	return &DbManager{session}, nil
 }
 
-func (d *Dal) Close() {
-	d.session.Close()
+func (manager *DbManager) Close() {
+	manager.session.Close()
 }

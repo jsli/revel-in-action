@@ -52,14 +52,20 @@ func (user *User) SaveUser() error {
 		fmt.Println("SaveUser in ------> User")
 	}
 
-	dal, err := NewDal()
+	manager, err := NewDbManager()
 	if err != nil {
-
+		fmt.Println("New db manager error")
+		return err
 	}
-	defer dal.Close()
+	defer manager.Close()
 
-	err = dal.SaveUser(user)
-	fmt.Println("Save User success: ", user)
+	err = manager.SaveUser(user)
+	if err != nil {
+		fmt.Println("save user failed")
+		return err
+	} else {
+		fmt.Println("Save User success: ", user)
+	}
 	return nil
 }
 
@@ -101,12 +107,13 @@ type RegUser struct {
 	ConfirmPwdStr string
 }
 
-func (regUser *RegUser) SaveUser() {
+func (regUser *RegUser) SaveUser() error {
 	if DEBUG {
 		fmt.Println("SaveUser in ------> RegUser")
 	}
 	regUser.HashPassword = generatePwdByte(regUser.PasswordStr)
-	regUser.User.SaveUser()
+	err := regUser.User.SaveUser()
+	return err
 }
 
 func (regUser *RegUser) Validate(v *revel.Validation) {
@@ -121,6 +128,7 @@ func (regUser *RegUser) Validate(v *revel.Validation) {
 	v.Check(regUser.UserName,
 		revel.Required{},
 		revel.Match{USERNAME_REX},
+		DuplicatedUser{},
 	)
 
 	v.Check(regUser.NickName,
@@ -131,6 +139,9 @@ func (regUser *RegUser) Validate(v *revel.Validation) {
 	//validation provide an convenient method for checking Email.
 	//revel has a const for email rexgep, Email will use the rex to check email string.
 	v.Email(regUser.Email)
+	v.Check(regUser.Email,
+		DuplicatedEmail{},
+	)
 
 	v.Check(regUser.PasswordStr,
 		revel.Required{},
@@ -148,3 +159,45 @@ func (regUser *RegUser) Validate(v *revel.Validation) {
  *used for updating user
  */
 type UpdateUser RegUser
+
+/*
+ * a validator for checking duplicated user
+ */
+type DuplicatedUser struct{}
+
+func (dup DuplicatedUser) IsSatisfied(obj interface{}) bool {
+	manager, err := NewDbManager()
+	if err != nil {
+		fmt.Println("New db manager error")
+		return false
+	}
+	defer manager.Close()
+	
+	registed := manager.IsUserRegistedByName(obj.(string))
+	return !registed
+}
+
+func (dup DuplicatedUser) DefaultMessage() string {
+	return "Duplicated User"
+}
+
+/*
+ * a validator for checking duplicated email
+ */
+type DuplicatedEmail struct{}
+
+func (dup DuplicatedEmail) IsSatisfied(obj interface{}) bool {
+	manager, err := NewDbManager()
+	if err != nil {
+		fmt.Println("New db manager error")
+		return false
+	}
+	defer manager.Close()
+	
+	registed := manager.IsUserRegistedByEmail(obj.(string))
+	return !registed
+}
+
+func (dup DuplicatedEmail) DefaultMessage() string {
+	return "Duplicated Email"
+}
