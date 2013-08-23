@@ -3,6 +3,7 @@ package models
 import (
 	"labix.org/v2/mgo/bson"
 	"errors"
+	"fmt"
 )
 
 const (
@@ -38,6 +39,19 @@ func (manager *DbManager) GetUserByEmail(email string) (user *User, err error) {
 	return
 }
 
+func (manager *DbManager) GetAllUsers() ([]User, error) {
+	uc := manager.session.DB(DbName).C(CollectionName)
+	count, _ := uc.Count()
+	fmt.Println("Total user count is ", count)
+	allUsers := []User{}
+	uc.Find(nil).All(&allUsers)
+	for _, user := range allUsers {
+		fmt.Println(user)
+		fmt.Println("==================")
+	}
+	return nil, nil
+}
+
 func (manager *DbManager) SaveUser(user *User) error {
 	uc := manager.session.DB(DbName).C(CollectionName)
 
@@ -51,6 +65,7 @@ func (manager *DbManager) SaveUser(user *User) error {
 		return errors.New("email name registed!!!")
 	}
 
+	user.Id = bson.NewObjectId()
 	err := uc.Insert(user)
 	return err
 }

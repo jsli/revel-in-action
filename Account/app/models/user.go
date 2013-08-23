@@ -5,6 +5,7 @@ import (
 	"code.google.com/p/go.crypto/bcrypt"
 	"github.com/robfig/revel"
 	"regexp"
+	"labix.org/v2/mgo/bson"
 )
 
 const (
@@ -31,6 +32,7 @@ func generatePwdByte(pwd string) []byte {
  * real struct which was persisted in database
  */
 type User struct {
+	Id bson.ObjectId "_id"
 	UserName string
 	Email    string
 	NickName string
@@ -45,6 +47,17 @@ func (user *User) String() string {
 		return fmt.Sprintf("User(username = %s, email = %s, nick name = %s), pwd = %s",
 			user.UserName, user.Email, user.NickName, user.HashPassword)
 	}
+}
+
+func GetAllUsers() error {
+	manager, err := NewDbManager()
+	if err != nil {
+		fmt.Println("New db manager error")
+		return err
+	}
+	defer manager.Close()
+	manager.GetAllUsers()
+	return nil
 }
 
 func (user *User) SaveUser() error {

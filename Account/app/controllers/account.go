@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"github.com/robfig/revel"
-	//"fmt"
 	"github.com/jsli/revel-in-action/Account/app/models"
 )
 
@@ -15,6 +14,7 @@ func (c Account) Index() revel.Result {
 }
 
 func (c Account) GetLogin() revel.Result {
+	models.GetAllUsers()
 	return c.Render()
 }
 
